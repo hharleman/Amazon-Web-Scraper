@@ -1,0 +1,131 @@
+#Import libraries
+from bs4 import BeautifulSoup
+import requests
+import smtplib
+import time
+import datetime
+# Connect to Website and pull in data
+URL='https://www.amazon.com/RXRXCOCO-Shoulder-Bathing-Swimsuit-Swimwear/dp/B08SBTL55Y/?_encoding=UTF8&pd_rd_w=OQgnj&pf_rd_p=03bef33a-a357-4fe3-9505-7fd4d6236957&pf_rd_r=VNHS7N39SYHDPQVAZ6QJ&pd_rd_r=b5d4a9af-3f32-48db-b86c-59862b15101e&pd_rd_wg=iLZu6&ref_=pd_gw_ci_mcx_mr_hp_d&th=1&psc=1'
+headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36 Edg/99.0.1150.30", 
+    "X-Amzn-Trace-Id": "Root=1-6223d5ea-48d7d0600de84c9331603f43"}
+page=requests.get(URL, headers=headers)
+
+#Pull HTML data from the website
+soup1=BeautifulSoup(page.content, "html.parser")
+
+#Make the HTML more condense/prettier
+soup2=BeautifulSoup(soup1.prettify(), "html.parser")
+
+#Find the product title--HTML id data
+title=soup2.find(id='productTitle').get_text().strip()
+print('product title:',title)
+
+#Find the product price--HTML span class data
+price=soup2.find('span',{'class':'a-offscreen'})
+for span in price:
+    print('price:',span.text.replace('USD','').strip()[1:])
+    
+#Find discount (another test)--HTML span class data
+discount=soup2.find('span',{'class':'a-size-large a-color-price savingPriceOverride aok-align-center reinventPriceSavingsPercentagePadding savingsPercentage'})
+for span in discount:
+    print('discount:', span.text.replace('USD','').strip())
+    
+#Find color (another test)--HTML span class data
+color=soup2.find('span',{'class':'selection'})
+for span in color:
+    print('color:', span.text.replace('USD','').strip())
+    
+#Find the product title--HTML id data
+store=soup2.find(id='sellerProfileTriggerId').get_text().strip()
+print('store:', store)
+
+import datetime
+today=datetime.date.today()
+print(today)
+
+#create the csv
+import csv
+
+#create column headers
+header=['Date','Title','Price','Discount','Color','Store']
+
+#create the list
+data=[today,title,price.string.strip()[1:],discount.string.strip(),color.string.strip(),store]
+type(data)
+
+
+#create the csv file
+with open ('Hot_Pink_Swimsuit_Amazon_Webscraper.csv', 'w', newline='', encoding='UTF8') as f:
+    writer=csv.writer(f)
+    writer.writerow(header)
+    writer.writerow(data)
+#this should output a csv in your documents
+print(data)
+
+import pandas as pd
+df=pd.read_csv('Hot_Pink_Swimsuit_Amazon_Webscraper.csv')
+print(df)
+
+#now we are appending data to the csv (automatically updates)
+
+with open ('Hot_Pink_Swimsuit_Amazon_Webscraper.csv', 'a+', newline='', encoding='UTF8') as f:
+    writer=csv.writer(f)
+    writer.writerow(data)
+    
+def check_price():
+    URL = 'https://www.amazon.com/RXRXCOCO-Shoulder-Bathing-Swimsuit-Swimwear/dp/B08SBTL55Y/?_encoding=UTF8&pd_rd_w=OQgnj&pf_rd_p=03bef33a-a357-4fe3-9505-7fd4d6236957&pf_rd_r=VNHS7N39SYHDPQVAZ6QJ&pd_rd_r=b5d4a9af-3f32-48db-b86c-59862b15101e&pd_rd_wg=iLZu6&ref_=pd_gw_ci_mcx_mr_hp_d&th=1&psc=1'
+    headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36 Edg/99.0.1150.30", 
+    "X-Amzn-Trace-Id": "Root=1-6223d5ea-48d7d0600de84c9331603f43"}
+    page=requests.get(URL, headers=headers)
+    soup1=BeautifulSoup(page.content, 'html.parser')
+    soup2=BeautifulSoup(soup1.prettify(), 'html.parser')
+    title=soup2.find(id='productTitle').get_text().strip()
+    price=soup2.find('span',{'class':'a-offscreen'})
+    title=soup2.find(id='productTitle').get_text().strip()
+    price=soup2.find('span',{'class':'a-offscreen'})
+    discount=soup2.find('span',{'class':'a-size-large a-color-price savingPriceOverride aok-align-center reinventPriceSavingsPercentagePadding savingsPercentage'})
+    color=soup2.find('span',{'class':'selection'})
+    store=soup2.find(id='sellerProfileTriggerId').get_text().strip()
+
+    import datetime
+    today=datetime.date.today()
+    
+    import csv
+    header=['Date','Title','Price','Discount','Color','Store']
+    data=[today,title,price.string.strip()[1:],discount.string.strip(),color.string.strip(),store]
+    
+#delete this when running a second time or it will delete the previou data    
+    with open ('Hot_Pink_Swimsuit_Amazon_Webscraper.csv', 'w', newline='', encoding='UTF8') as f:
+        writer=csv.writer(f)
+        writer.writerow(header)
+        writer.writerow(data)
+while(True):
+    check_price()
+    time.sleep(5)
+#send an email if price falls below $25
+#reading the csv with newly added dates and prices as new rows
+import pandas as pd
+df=pd.read_csv('Hot_Pink_Swimsuit_Amazon_Webscraper.csv')
+print(df)
+
+#sending an email if the item reaches a certain price
+def send_mail():
+    #connect to server
+    server=stmplib.SMTP_SSL('smtp.gmail.com',456) 
+    server.ehlo()
+    #server.starttls()
+    server.ehlo()
+    server.login('youremail@gmail.com','password')
+    
+    subject='Your favorite pink swimsuit is on sale'
+    body='Dearest Haley, This is the moment we have all been waiting for. Now is the chance for you to buy another hot pink swimsuit.'
+    msg=f'subject: {subject}\n\n{body}'
+
+    server.sendmail(
+        'youremail@gmail.com',
+        msg
+    )
+if (price<25)
+    send_mail() #see script below for details on msg
+    
+  
